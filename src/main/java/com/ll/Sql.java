@@ -157,6 +157,7 @@ public class Sql {
     }
 
     public <T> T selectOne(ResultSetExtractor<T> extractor) {
+
         try (Connection conn = getConnect();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
@@ -174,6 +175,29 @@ public class Sql {
         return null;
     }
 
+    public List<Long> selectLongs() {
+        return selectMultiple(rs -> rs.getLong(1));
+    }
+
+    public <T> List<T> selectMultiple(ResultSetExtractor<T> extractor) {
+        List<T> results = new ArrayList<>();
+        try (Connection conn = getConnect();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+
+            setArgsToPreparedStatement(pstmt, argsList);
+
+            try(ResultSet rs = pstmt.executeQuery()){
+                while(rs.next()) {
+                    results.add(extractor.extract(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return results;
+    }
+
     @FunctionalInterface
     public interface ResultSetExtractor<T> {
         T extract(ResultSet rs) throws SQLException;
@@ -186,6 +210,8 @@ public class Sql {
                 pstmt.setString(i, (String)cur);
             } else if (cur instanceof Integer) {
                 pstmt.setInt(i, (Integer)cur);
+            } else if(cur instanceof Long) {
+                pstmt.setLong(i, (Long)cur);
             } else if (cur instanceof  Boolean) {
                 pstmt.setBoolean(i, (Boolean)cur);
             }
@@ -217,7 +243,7 @@ public class Sql {
     public Sql appendIn(String query, int... args) {
         StringBuffer sb = new StringBuffer();
         sb.append("?");
-        for(int i=1; i<args.length; i++) {
+        for (int i = 1; i < args.length; i++) {
             sb.append(", ?");
         }
         query = query.replace("?", sb.toString());
@@ -225,6 +251,20 @@ public class Sql {
 
         argsList.addAll(IntStream.of(args)
                 .boxed()
+                .toList());
+        return this;
+    }
+
+    public Sql appendIn(String query, Long... args) {
+        StringBuffer sb = new StringBuffer();
+        sb.append("?");
+        for(int i=1; i<args.length; i++) {
+            sb.append(", ?");
+        }
+        query = query.replace("?", sb.toString());
+        append(query);
+
+        argsList.addAll(Arrays.stream(args)
                 .toList());
         return this;
     }
