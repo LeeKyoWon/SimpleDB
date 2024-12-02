@@ -1,5 +1,8 @@
 package com.ll;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -95,6 +98,24 @@ public class Sql {
         return selectedRows;
     }
 
+    public <T> List<T> selectRows(Class<T> clazz) {
+        List<T> entityRows = new ArrayList<>();
+        try(Connection conn = getConnect();
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        {
+            try(ResultSet rs = pstmt.executeQuery()) {
+                while(rs.next()) {
+                    entityRows.add(getSelectedRow(clazz, rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return entityRows;
+    }
+
     public Map<String, Object> selectRow() {
         try(Connection conn = getConnect();
             PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
@@ -105,6 +126,57 @@ public class Sql {
                 }
             }
         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public <T> T getSelectedRow(Class<T> clazz, ResultSet rs) {
+        Map<String, Object> row = new HashMap<>();
+        try {
+            Field[] fields = clazz.getDeclaredFields();
+
+            // 생성자를 초기화 할 데이터 저장
+            Object[] fieldValues = new Object[fields.length];
+            // 생성자의 파라미터 정보 저장
+            Class<?>[] paramTypes = new Class[fields.length];
+            for(int i=0; i<fields.length; i++) {
+                paramTypes[i] = fields[i].getType();
+            }
+
+            Constructor<T> constructor = clazz.getConstructor(paramTypes);
+
+            ResultSetMetaData rsMetaData = rs.getMetaData();
+            int columnCount = rsMetaData.getColumnCount();
+
+            // Column 을 1개씩 읽어서 객체의 생성자 인자로 사용할 fieldValues[]에 저장
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = rsMetaData.getColumnName(i);
+                int columnType = rsMetaData.getColumnType(i);
+
+                Field field = fields[i-1];
+                field.setAccessible(true);
+                Object value = null;
+
+                switch (columnType) {
+                    case Types.INTEGER:
+                        value = rs.getLong(i);
+                        break;
+                    case Types.TIMESTAMP:
+                        value = rs.getTimestamp(i).toLocalDateTime();
+                        break;
+                    case Types.BIT:
+                        value = rs.getBoolean(i);
+                        break;
+                    default:
+                        value = rs.getString(i);
+                }
+                row.put(columnName, value);
+                fieldValues[i-1] = value;
+            }
+
+            return constructor.newInstance(fieldValues);
+        }catch(SQLException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e){
             e.printStackTrace();
         }
         return null;
@@ -268,6 +340,8 @@ public class Sql {
                 .toList());
         return this;
     }
+
+
 }
 
 
