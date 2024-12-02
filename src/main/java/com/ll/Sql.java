@@ -82,31 +82,8 @@ public class Sql {
             PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
         {
             try(ResultSet rs = pstmt.executeQuery()) {
-                ResultSetMetaData rsMetaData = rs.getMetaData();
-                int columnCount = rsMetaData.getColumnCount();
-
                 while(rs.next()) {
-                    Map<String, Object> row = new HashMap<>();
-                    for (int i = 1; i <=columnCount; i++) {
-
-                        String columnName = rsMetaData.getColumnName(i);
-                        int columnType = rsMetaData.getColumnType(i);
-
-                        switch(columnType) {
-                            case Types.INTEGER:
-                                row.put(columnName, rs.getLong(i));
-                                break;
-                            case Types.TIMESTAMP:
-                                row.put(columnName, rs.getTimestamp(i).toLocalDateTime());
-                                break;
-                            case Types.BIT:
-                                row.put(columnName, false);
-                                break;
-                            default :
-                                row.put(columnName, rs.getString(i));
-                        }
-                    }
-                    selectedRows.add(row);
+                    selectedRows.add(getSelectedRow(rs));
                 }
             }
 
@@ -115,6 +92,51 @@ public class Sql {
         }
 
         return selectedRows;
+    }
+
+    public Map<String, Object> selectRow() {
+        try(Connection conn = getConnect();
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        {
+            try(ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return getSelectedRow(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Map<String, Object> getSelectedRow(ResultSet rs) {
+        Map<String, Object> row = new HashMap<>();
+        try {
+            ResultSetMetaData rsMetaData = rs.getMetaData();
+            int columnCount = rsMetaData.getColumnCount();
+
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = rsMetaData.getColumnName(i);
+                int columnType = rsMetaData.getColumnType(i);
+
+                switch (columnType) {
+                    case Types.INTEGER:
+                        row.put(columnName, rs.getLong(i));
+                        break;
+                    case Types.TIMESTAMP:
+                        row.put(columnName, rs.getTimestamp(i).toLocalDateTime());
+                        break;
+                    case Types.BIT:
+                        row.put(columnName, false);
+                        break;
+                    default:
+                        row.put(columnName, rs.getString(i));
+                }
+            }
+        }catch(SQLException e){
+                e.printStackTrace();
+        }
+        return row;
     }
 
     private void setArgsToPreparedStatement(PreparedStatement pstmt, List<Object> argsList) throws  SQLException {
