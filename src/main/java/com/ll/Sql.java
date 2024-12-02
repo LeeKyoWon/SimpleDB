@@ -1,9 +1,7 @@
 package com.ll;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class Sql {
@@ -78,6 +76,47 @@ public class Sql {
         return affectedRowNum;
     }
 
+    public List<Map<String, Object>> selectRows() {
+        List<Map<String,Object>> selectedRows = new ArrayList<>();
+        try(Connection conn = getConnect();
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        {
+            try(ResultSet rs = pstmt.executeQuery()) {
+                ResultSetMetaData rsMetaData = rs.getMetaData();
+                int columnCount = rsMetaData.getColumnCount();
+
+                while(rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    for (int i = 1; i <=columnCount; i++) {
+
+                        String columnName = rsMetaData.getColumnName(i);
+                        int columnType = rsMetaData.getColumnType(i);
+
+                        switch(columnType) {
+                            case Types.INTEGER:
+                                row.put(columnName, rs.getLong(i));
+                                break;
+                            case Types.TIMESTAMP:
+                                row.put(columnName, rs.getTimestamp(i).toLocalDateTime());
+                                break;
+                            case Types.BIT:
+                                row.put(columnName, false);
+                                break;
+                            default :
+                                row.put(columnName, rs.getString(i));
+                        }
+                    }
+                    selectedRows.add(row);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return selectedRows;
+    }
+
     private void setArgsToPreparedStatement(PreparedStatement pstmt, List<Object> argsList) throws  SQLException {
         for(int i=1; i<=argsList.size(); i++) {
             Object cur = argsList.get(i-1);
@@ -120,6 +159,5 @@ public class Sql {
                 .toList());
         return this;
     }
-
 }
 
