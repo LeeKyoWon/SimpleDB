@@ -148,6 +148,14 @@ public class Sql {
         return selectOne(rs -> rs.getLong(1));
     }
 
+    public String selectString() {
+        return selectOne(rs -> rs.getString(1));
+    }
+
+    public Boolean selectBoolean() {
+        return selectOne(rs -> rs.getBoolean(1));
+    }
+
     public <T> T selectOne(ResultSetExtractor<T> extractor) {
         try (Connection conn = getConnect();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
