@@ -215,7 +215,14 @@ public class Sql {
     }
 
     public Sql appendIn(String query, int... args) {
+        StringBuffer sb = new StringBuffer();
+        sb.append("?");
+        for(int i=1; i<args.length; i++) {
+            sb.append(", ?");
+        }
+        query = query.replace("?", sb.toString());
         append(query);
+
         argsList.addAll(IntStream.of(args)
                 .boxed()
                 .toList());
