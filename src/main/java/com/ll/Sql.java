@@ -65,6 +65,19 @@ public class Sql {
         return affectedRowNum;
     }
 
+    public long delete() {
+        int affectedRowNum = 0;
+        try(Connection conn = getConnect();
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        {
+            setArgsToPreparedStatement(pstmt, argsList);
+            affectedRowNum = pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return affectedRowNum;
+    }
+
     private void setArgsToPreparedStatement(PreparedStatement pstmt, List<Object> argsList) throws  SQLException {
         for(int i=1; i<=argsList.size(); i++) {
             Object cur = argsList.get(i-1);
