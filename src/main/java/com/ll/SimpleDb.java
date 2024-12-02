@@ -2,6 +2,8 @@ package com.ll;
 
 import lombok.Setter;
 
+import java.sql.Connection;
+
 @Setter
 public class SimpleDb {
     private final String username;
@@ -27,7 +29,13 @@ public class SimpleDb {
     }
 
     public Sql genSql() {
-        return new Sql(url, username, password);
+        Connection conn = ThreadConnectionManager.getConnection(url, username, password);
+        return new Sql(url, username, password, conn);
     }
+
+    public void closeConnection() {
+        ThreadConnectionManager.closeConnection();
+    }
+
 
 }

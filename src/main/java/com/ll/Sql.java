@@ -14,16 +14,17 @@ public class Sql {
     private String url;
     private String username;
     private String password;
+    private Connection conn;
 
-    Sql(String url, String username, String password) {
+    Sql(String url, String username, String password, Connection conn) {
         this.url = url;
         this.username = username;
         this.password = password;
+        this.conn = conn;
     }
 
     public void execute() {
-        try (Connection conn = getConnect();
-             PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
             setArgsToPreparedStatement(pstmt, argsList);
             pstmt.execute();
@@ -36,8 +37,7 @@ public class Sql {
     public long insert() {
         int id = 0;
 
-        try (Connection conn = getConnect();
-             PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
             setArgsToPreparedStatement(pstmt, argsList);
             pstmt.executeUpdate();
@@ -56,8 +56,7 @@ public class Sql {
 
     public long update() {
         int affectedRowNum = 0;
-        try(Connection conn = getConnect();
-            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        try(PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
         {
             setArgsToPreparedStatement(pstmt, argsList);
             affectedRowNum = pstmt.executeUpdate();
@@ -69,8 +68,7 @@ public class Sql {
 
     public long delete() {
         int affectedRowNum = 0;
-        try(Connection conn = getConnect();
-            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        try(PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
         {
             setArgsToPreparedStatement(pstmt, argsList);
             affectedRowNum = pstmt.executeUpdate();
@@ -82,8 +80,7 @@ public class Sql {
 
     public List<Map<String, Object>> selectRows() {
         List<Map<String,Object>> selectedRows = new ArrayList<>();
-        try(Connection conn = getConnect();
-            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        try(PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
         {
             try(ResultSet rs = pstmt.executeQuery()) {
                 while(rs.next()) {
@@ -100,8 +97,7 @@ public class Sql {
 
     public <T> List<T> selectRows(Class<T> clazz) {
         List<T> entityRows = new ArrayList<>();
-        try(Connection conn = getConnect();
-            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        try(PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
         {
             try(ResultSet rs = pstmt.executeQuery()) {
                 while(rs.next()) {
@@ -116,9 +112,22 @@ public class Sql {
         return entityRows;
     }
 
+    public <T> T selectRow(Class<T> clazz) {
+        try(PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        {
+            try(ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return getSelectedRow(clazz, rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public Map<String, Object> selectRow() {
-        try(Connection conn = getConnect();
-            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        try(PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
         {
             try(ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -139,10 +148,7 @@ public class Sql {
             // 생성자를 초기화 할 데이터 저장
             Object[] fieldValues = new Object[fields.length];
             // 생성자의 파라미터 정보 저장
-            Class<?>[] paramTypes = new Class[fields.length];
-            for(int i=0; i<fields.length; i++) {
-                paramTypes[i] = fields[i].getType();
-            }
+            Class<?>[] paramTypes = Util.getConstructorParamTypes(fields);
 
             Constructor<T> constructor = clazz.getConstructor(paramTypes);
 
@@ -230,8 +236,7 @@ public class Sql {
 
     public <T> T selectOne(ResultSetExtractor<T> extractor) {
 
-        try (Connection conn = getConnect();
-             PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
             setArgsToPreparedStatement(pstmt, argsList);
 
@@ -253,8 +258,7 @@ public class Sql {
 
     public <T> List<T> selectMultiple(ResultSetExtractor<T> extractor) {
         List<T> results = new ArrayList<>();
-        try (Connection conn = getConnect();
-             PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
             setArgsToPreparedStatement(pstmt, argsList);
 
