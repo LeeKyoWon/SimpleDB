@@ -52,6 +52,19 @@ public class Sql {
         return id;
     }
 
+    public long update() {
+        int affectedRowNum = 0;
+        try(Connection conn = getConnect();
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString()))
+        {
+            setArgsToPreparedStatement(pstmt, argsList);
+            affectedRowNum = pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return affectedRowNum;
+    }
+
     private void setArgsToPreparedStatement(PreparedStatement pstmt, List<Object> argsList) throws  SQLException {
         for(int i=1; i<=argsList.size(); i++) {
             Object cur = argsList.get(i-1);
@@ -94,7 +107,6 @@ public class Sql {
                 .toList());
         return this;
     }
-
 
 }
 
