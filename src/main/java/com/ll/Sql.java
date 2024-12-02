@@ -1,6 +1,7 @@
 package com.ll;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -137,6 +138,22 @@ public class Sql {
                 e.printStackTrace();
         }
         return row;
+    }
+
+    public LocalDateTime selectDatetime() {
+        try (Connection conn = getConnect();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+
+            try(ResultSet rs = pstmt.executeQuery()){
+                if(rs.next()) {
+                    return rs.getTimestamp(1).toLocalDateTime();
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void setArgsToPreparedStatement(PreparedStatement pstmt, List<Object> argsList) throws  SQLException {
