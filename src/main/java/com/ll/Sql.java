@@ -141,12 +141,20 @@ public class Sql {
     }
 
     public LocalDateTime selectDatetime() {
+        return selectOne(rs -> rs.getTimestamp(1).toLocalDateTime());
+    }
+
+    public Long selectLong() {
+        return selectOne(rs -> rs.getLong(1));
+    }
+
+    public <T> T selectOne(ResultSetExtractor<T> extractor) {
         try (Connection conn = getConnect();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
             try(ResultSet rs = pstmt.executeQuery()){
                 if(rs.next()) {
-                    return rs.getTimestamp(1).toLocalDateTime();
+                    return extractor.extract(rs);
                 }
             }
 
@@ -154,6 +162,11 @@ public class Sql {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @FunctionalInterface
+    public interface ResultSetExtractor<T> {
+        T extract(ResultSet rs) throws SQLException;
     }
 
     private void setArgsToPreparedStatement(PreparedStatement pstmt, List<Object> argsList) throws  SQLException {
@@ -199,4 +212,6 @@ public class Sql {
         return this;
     }
 }
+
+
 
