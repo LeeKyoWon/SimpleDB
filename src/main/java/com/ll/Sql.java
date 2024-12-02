@@ -160,6 +160,8 @@ public class Sql {
         try (Connection conn = getConnect();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
 
+            setArgsToPreparedStatement(pstmt, argsList);
+
             try(ResultSet rs = pstmt.executeQuery()){
                 if(rs.next()) {
                     return extractor.extract(rs);
