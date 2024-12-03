@@ -3,6 +3,7 @@ package com.ll;
 import lombok.Setter;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 @Setter
 public class SimpleDb {
@@ -38,4 +39,32 @@ public class SimpleDb {
     }
 
 
+    public void startTransaction() {
+        try{
+            Connection conn = ThreadConnectionManager.getConnection(url, username, password);
+            conn.setAutoCommit(false);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void rollback() {
+        try{
+            Connection conn = ThreadConnectionManager.getConnection(url, username, password);
+            if(conn != null)
+                conn.rollback();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void commit() {
+        try{
+            Connection conn = ThreadConnectionManager.getConnection(url, username, password);
+            if(conn != null)
+                conn.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

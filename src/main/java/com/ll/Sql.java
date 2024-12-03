@@ -6,7 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.IntStream;
 
 public class Sql {
     private StringBuffer sql = new StringBuffer();
@@ -294,10 +293,6 @@ public class Sql {
         }
     }
 
-    private Connection getConnect() throws SQLException {
-        return DriverManager.getConnection(url, username, password);
-    }
-
     public Sql append(String query) {
         sql.append(query).append(" ");
         return this;
@@ -316,7 +311,7 @@ public class Sql {
         return this;
     }
 
-    public Sql appendIn(String query, int... args) {
+    public Sql appendIn(String query, Object... args) {
         StringBuffer sb = new StringBuffer();
         sb.append("?");
         for (int i = 1; i < args.length; i++) {
@@ -325,27 +320,9 @@ public class Sql {
         query = query.replace("?", sb.toString());
         append(query);
 
-        argsList.addAll(IntStream.of(args)
-                .boxed()
-                .toList());
+        argsList.addAll(Arrays.asList(args));
         return this;
     }
-
-    public Sql appendIn(String query, Long... args) {
-        StringBuffer sb = new StringBuffer();
-        sb.append("?");
-        for(int i=1; i<args.length; i++) {
-            sb.append(", ?");
-        }
-        query = query.replace("?", sb.toString());
-        append(query);
-
-        argsList.addAll(Arrays.stream(args)
-                .toList());
-        return this;
-    }
-
-
 }
 
 
